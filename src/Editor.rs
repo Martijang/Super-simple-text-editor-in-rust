@@ -40,9 +40,9 @@ impl Editor{
                         self.file_content = content;
                         self.statue = format!("{} loaded.", self.path);
                     }
-                    Err(_) => {
+                    Err(e) => {
                         Editor::save_file(self, false);
-                        self.statue = format!("Failed to load file. New file created at '{}',", self.path);
+                        self.statue = format!("Failed to load file. New file created at '{}'. Error message: {:?},", self.path, e);
                     }
                 }
             }.into(),
@@ -52,8 +52,8 @@ impl Editor{
                     Ok(_) => {
                         self.statue = format!("{} has been deleted.", self.path);
                     },
-                    Err(_) => {
-                        self.statue = format!("Failed to delete file: {}", self.path);
+                    Err(e) => {
+                        self.statue = format!("Failed to delete file: {} with error: {:?}", self.path, e);
                     }
                 }
             }.into(),
