@@ -9,7 +9,6 @@ use std::fs;
 pub struct Editor{
     path: String,
     file_content: text_editor::Content,
-    new_file_content: String,
     statue: String,
 }
 
@@ -19,6 +18,7 @@ pub enum Message{
     FilePathInput(String),
     SubmitFile,
     Editing(text_editor::Action),
+    Delete,
 }
 
 impl Editor{
@@ -38,19 +38,28 @@ impl Editor{
                 match Editor::get_file(&self.path) {
                     Ok(content) => {
                         self.file_content = content;
-                        self.statue = format!("{} loaded", self.path);
+                        self.statue = format!("{} loaded.", self.path);
                     }
                     Err(_) => {
                         Editor::save_file(self, false);
-                        self.file_content = Editor::get_file(&self.path).unwrap();
-                        self.statue = format!("Failed to load file. New file created at '{}'", self.path);
+                        self.statue = format!("Failed to load file. New file created at '{}',", self.path);
+                    }
+                }
+            }.into(),
+
+            Message::Delete => {
+                match Editor::delete_file(&self.path){
+                    Ok(_) => {
+                        self.statue = format!("{} has been deleted.", self.path);
+                    },
+                    Err(_) => {
+                        self.statue = format!("Failed to delete file: {}", self.path);
                     }
                 }
             }.into(),
 
             Message::Editing(action) => {
                 self.file_content.perform(action);
-                self.new_file_content = self.file_content.text().to_owned();
             }.into()
         }
     }
@@ -59,9 +68,14 @@ impl Editor{
         if condition == false {
             fs::write(&self.path,  "Write something now!").unwrap();
         }else{
-            fs::write(&self.path, &self.new_file_content).unwrap();
+            fs::write(&self.path, &self.file_content.text()).unwrap();
             self.statue = "Saved!".to_string();
         }
+    }
+
+    fn delete_file(path: &String) -> Result<(), std::io::Error>{
+        fs::remove_file(path)?;
+        Ok(())
     }
 }
 
@@ -73,7 +87,10 @@ pub fn view(state: &Editor) -> Element<'_, Message>{
             button(text("Submit")).on_press(Message::SubmitFile)
         ],
         text(&state.statue),
-        button(text("Save")).on_press(Message::Save),
+        row![
+            button(text("Save")).on_press(Message::Save),
+            button(text("delete")).on_press(Message::Delete),
+        ].spacing(10),
         text_editor(&state.file_content)
         .on_action(Message::Editing),
     ].into() 
