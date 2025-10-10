@@ -22,15 +22,28 @@ pub enum Message{
 }
 
 impl Editor{
+    pub fn run() -> iced::Result{
+        iced::application("Super simple Text Editor", Editor::update, view)
+            .theme(|_s| iced::Theme::Dark)
+            .run()?;
+        Ok(())
+    }
+
     fn get_file(path: &String) -> Result<text_editor::Content, std::io::Error>{
         let content:String = fs::read_to_string(path)?;
 
         Ok(text_editor::Content::with_text(&content.to_owned()))
     }
 
-    pub fn update(&mut self, message: Message) -> Task<Message>{
+    fn update(&mut self, message: Message) -> Task<Message>{
         match message {
-            Message::Save => Editor::save_file(self, true).into(),
+            Message::Save =>{ 
+                match Editor::save_file(self, true){
+                    Ok(_) => self.statue = "Saved!".to_string(),
+                    Err(e) => self.statue = format!("Failed to save file: {}. With error: {:?}", 
+                    self.path, e),
+                }
+            }.into(),
 
             Message::FilePathInput(path) => (self.path = path).into(),
 
@@ -40,9 +53,17 @@ impl Editor{
                         self.file_content = content;
                         self.statue = format!("{} loaded.", self.path);
                     }
+
                     Err(e) => {
-                        Editor::save_file(self, false);
-                        self.statue = format!("Failed to load file. New file created at '{}'. Error message: {:?},", self.path, e);
+                        match Editor::save_file(self, false){
+                            Ok(_) => self.statue = "Saved!".to_string(),
+
+                            Err(e) => self.statue = format!("Failed to create file at: {}, 
+                            with error: {:?}", self.path, e),
+                        };
+
+                        self.statue = format!("Failed to load file. New file created at '{}'. 
+                        Error message: {:?},", self.path, e);
                     }
                 }
             }.into(),
@@ -64,13 +85,13 @@ impl Editor{
         }
     }
 
-    fn save_file(&mut self, condition: bool){
+    fn save_file(&mut self, condition: bool) -> Result<(), std::io::Error>{
         if condition == false {
-            fs::write(&self.path,  "Write something now!").unwrap();
+            fs::write(&self.path,  "Write something now!")?;
         }else{
-            fs::write(&self.path, &self.file_content.text()).unwrap();
-            self.statue = "Saved!".to_string();
+            fs::write(&self.path, &self.file_content.text())?;
         }
+        Ok(())
     }
 
     fn delete_file(path: &String) -> Result<(), std::io::Error>{
@@ -79,7 +100,7 @@ impl Editor{
     }
 }
 
-pub fn view(state: &Editor) -> Element<'_, Message>{
+fn view(state: &Editor) -> Element<'_, Message>{
     column![
         row![
             text_input::<Message, Theme, Renderer>("type the path to load", &state.path)
