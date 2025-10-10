@@ -4,5 +4,5 @@ mod editor;
 
 use editor::Editor;
 fn main() {
-    Editor::run().unwrap();
+    Editor::run("Super Simeple Text Editor").unwrap();
 }
