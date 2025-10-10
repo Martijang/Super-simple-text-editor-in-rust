@@ -22,8 +22,8 @@ pub enum Message{
 }
 
 impl Editor{
-    pub fn run() -> iced::Result{
-        iced::application("Super simple Text Editor", Editor::update, view)
+    pub fn run(title: &'static str) -> iced::Result{
+        iced::application(title, Editor::update, view)
             .theme(|_s| iced::Theme::Dark)
             .run()?;
         Ok(())
